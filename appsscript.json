@@ -1,0 +1,13 @@
+{
+  "timeZone": "Europe/Paris",
+  "dependencies": {
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "sheets": {
+    "macros": [ {
+      "menuName": "ImportToSouchier",
+      "functionName": "copyImportToSouchier",
+      "defaultShortcut": "Ctrl+Alt+Shift+1"
+    } ]
+  }
+}
