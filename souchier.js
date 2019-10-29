@@ -4,11 +4,11 @@ var COL_OCCUPATION = 7; //column in 'Emplacements congélateurs' where occupatio
 var COL_FM = 8;     //column in 'Emplacements congélateurs' where FM id is
 var COL_CLIENT = 10; //column in 'Emplacements congélateurs' where customer ref is
 var COL_SIAM = 9;  //column in 'Emplacements congélateurs' where SIAM number is
-var COL_VALID = 66; // column in 'Souchier Ceva Biovac' where validation checkbox is
-var COL_DESTR = 71; // column in 'Souchier Ceva Biovac' where destruction checkbox is
-var COL_MS = 21;    // column in 'Souchier Ceva Biovac' where MS emplacement is written
-var COL_WS = 23;    // column in 'Souchier Ceva Biovac' where WS emplacement is written
-var COL_LOG = 24;   // column in 'Souchier Ceva Biovac' where emplacement follow-up is written
+var COL_VALID = 67; // column in 'Souchier Ceva Biovac' where validation checkbox is
+var COL_DESTR = 73; // column in 'Souchier Ceva Biovac' where destruction checkbox is
+var COL_MS = 22;    // column in 'Souchier Ceva Biovac' where MS emplacement is written
+var COL_WS = 24;    // column in 'Souchier Ceva Biovac' where WS emplacement is written
+var COL_LOG = 25;   // column in 'Souchier Ceva Biovac' where emplacement follow-up is written
 var COL_SOUCH = 6.  // column in 'Souchier Ceva Biovac' where the souche name is
 
 var conf = {
@@ -168,45 +168,6 @@ function deleteEmplacement(e) {
 
 
 /**
- * Mark the emplacements as occupied or not according newValue passed
- * work on disk, called by updateEmplacement()
- * @param {[Object]} listeEmplacements : an array of 'emplacement' objects, as return by decodeEmplcacement 
- * @param {String} newValue : OCCUPE or LIBRE
- * @param refClient
- * side effect : modify column "Utilisé?" of sheet "Emplacements congélateurs"
- * CAUTION : column is hardcoded, do not insert or delete columns
- * CAUTION : sheet is hard-coded, do not rename the sheet
- * @return : true if status changed, false + alert message if trying to occupy alreday occupied location
- * or wrong location description
- */
-function changeOccupation(listeEmplacements, newValue, refClient, fm, siam, silentMode, doNotStop){
-  for(l=0; l < listeEmplacements.length; l++) {
-    var ligne;
-    try{ 
-      ligne = conf.getLineForFreezer(listeEmplacements[l]);
-    }
-    catch(error){
-      SpreadsheetApp.getUi().alert("L'emplacement n'est pas valide : " + error);
-      return false;
-    }
-    var status = conf.sheetEmplCong.getRange(ligne, COL_OCCUPATION + 1);
-    if(status.getValue() == OCCUPE && newValue == OCCUPE && conf.sheetEmplCong.getRange(ligne, COL_FM + 1) != fm ){
-      if(!silentMode){
-        SpreadsheetApp.getUi().alert("L'emplacement "+ conf.sheetEmplCong.getRange(ligne,1).getValue()+" est déjà occupé par " +
-          conf.sheetEmplCong.getRange(ligne, COL_FM + 1).getValue() + " FM : " + conf.sheetEmplCong.getRange(ligne, COL_FM + 1).getValue());
-      }
-      return false;
-    }
-    status.setValue(newValue);
-    conf.sheetEmplCong.getRange(ligne, COL_FM + 1).setValue(fm || "");
-    conf.sheetEmplCong.getRange(ligne, COL_SIAM + 1).setValue(siam || "");
-    conf.sheetEmplCong.getRange(ligne, COL_CLIENT + 1).setValue(refClient || "");
-  }
-  return true;
-}
-  
-
-/**
 * initialise all congélateur occupation status from data
 * in Souchier sheet.
 * data in congélateur sheet are erased
@@ -264,7 +225,7 @@ function initEmplacementsv7() {
       if(target[ligne][COL_OCCUPATION-7] == OCCUPE ) { // conflict detected
         if(target[ligne][COL_FM-7] != row[1]){
           target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
-          var col = decodeListe(emplacements_ms).indexOf(emplacements[e]) > 0 ? 18 : 20;
+          var col = decodeListe(emplacements_ms).indexOf(emplacements[e]) > 0 ? COL_MS - 1 : COL_WS - 1;
           SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Souchier Ceva Biovac').getRange(l+1, col).setBackground("red");
         }        
       }else{ // no conflict, write souche data
@@ -283,7 +244,6 @@ function initEmplacementsv7() {
   SpreadsheetApp.getActiveSpreadsheet().toast("Calculs terminés, écriture en cours..."+target.length+" x "+target[0].length, "Souchier", 200);
   conf.sheetEmplCong.getRange(zone).setValues(target);
   SpreadsheetApp.flush();
-  conf.sheetEmplCong.getRange('A1:Z1').setBackground("white");
   SpreadsheetApp.getActiveSpreadsheet().toast("Terminé avec succès");
 }
 

@@ -6,7 +6,7 @@
   "sheets": {
     "macros": [ {
       "menuName": "ImportToSouchier",
-      "functionName": "copyImportToSouchier",
+      "functionName": "ImportToSouchier",
       "defaultShortcut": "Ctrl+Alt+Shift+1"
     } ]
   }

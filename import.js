@@ -12,7 +12,7 @@ function ImportToSouchier() {
   toast("Import en cours...", 300);
   var lign = getLastRowForColumn(importSheetf.getRange("B:B"));
   var impf1 = importSheetf.getRange(1, 1, lign, 4);
-  var impf2 = importSheetf.getRange(1, 7, lign, 16);
+  var impf2 = importSheetf.getRange(1, 7, lign, 17);
   // 2 - find target location = first empty line of target sheet
   var souchLign = getLastRowForColumn(targetSheet.getRange("C:C")) + 1;
   var targetCell1 = targetSheet.getRange(souchLign, 2);
@@ -28,7 +28,7 @@ function ImportToSouchier() {
 
 /**
 * copy data from import sheet (value only mode) and erase import after copy 
-* INITIAL IMPORT, COPY ALL COLUMNS FROM 1 TO 16
+* INITIAL IMPORT, COPY ALL COLUMNS FROM 1 TO 17
 * Pour executer ce script, sélectionner 'ImportInitialToSouchier' dans le menu en haut
 * et appuyer sur le triangle "Play"
 */
@@ -37,7 +37,7 @@ function ImportInitialToSouchier() {
   // 1 - get import data
   toast("Import initial en cours...", 300);
   var lign = getLastRowForColumn(importSheetf.getRange("B:B"));
-  var impf = importSheetf.getRange(1, 1, lign, 16);
+  var impf = importSheetf.getRange(1, 1, lign, 17);
 
   // 2 - find target location = first empty line of target sheet
   var souchLign = getLastRowForColumn(targetSheet.getRange("C:C")) + 1;
