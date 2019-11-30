@@ -91,12 +91,28 @@ function getSheet(name){
 */
 function getLastRowForColumn(col) {
   var values = col.getValues();
-  var lign = 0, lastNonEmpty = 0;
+  var lign = 0, lastNonEmpty = -1;
   while( lign < values.length ) { 
     if( values[lign] != "") {lastNonEmpty = lign}
     if(lign++ - lastNonEmpty > 50) {break}
   } // end while
+  if(lastNonEmpty < 0) { return false } // no empty position found 
   return lastNonEmpty + 1; //because value array start at 0, rows at 1
+}
+
+
+/**
+* @param {Range} col mono-dimensional range (column or row)
+* @return {Integer} the first empty position 
+*/
+function getFirstEmptyRow(col) {
+  var values = col.getValues();
+  var lign = 0;
+  while( lign < values.length && values[lign] != "") { 
+    lign++;
+  } // end while
+  if(lign == values.length) { return false } // no empty position found 
+  return lign + 1; //because value array start at 0, rows at 1
 }
 
 

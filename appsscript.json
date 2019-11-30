@@ -4,10 +4,10 @@
   },
   "exceptionLogging": "STACKDRIVER",
   "sheets": {
-    "macros": [ {
+    "macros": [{
       "menuName": "ImportToSouchier",
       "functionName": "ImportToSouchier",
       "defaultShortcut": "Ctrl+Alt+Shift+1"
-    } ]
+    }]
   }
 }
