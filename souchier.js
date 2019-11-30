@@ -67,7 +67,19 @@ var conf = {
   
   getNbTotalEmplacements : function() {
     return this.congs.reduce(function (total, congel) { return total + congel.nbEmplacements }, 0);
- }
+ },
+  
+  getRangeForEtagere: function(congel, etag1, etag2) {
+    var startCong = this.getLineForEtagere(congel, etag1);
+    var cong = this.congs[congel - 1];
+    var sizeEtag = cong.nbRacks * cong.nbPlateaux * cong.nbLettres * cong.nbLignes;
+    var nb = etag2 ? 2 : 1;
+    return this.sheetEmplCong.getRange("H"+ (startCong).toString() + ":L" + (startCong + nb * sizeEtag - 1).toString()); 
+  },
+  
+  getLineForEtagere: function(congel, etag) {
+    return this.getLineForFreezer(decodeEmplacement("C" + congel + " E" + etag + " R1 P1 A1"));
+  }
 
 } // end conf object
 
@@ -95,7 +107,7 @@ function onEdit(e) {
   // column validation checked
   if(e.range.getValue() && (col === COL_VALID)) {
      writeUserStamp(e);
-  }
+  } else
   
   // column destruction checked
   if(e.range.getValue() && (col === COL_DESTR)) {
@@ -106,8 +118,16 @@ function onEdit(e) {
   // column destruction unchecked
     SpreadsheetApp.getUi().alert("La destruction est irréversible!");
     e.range.setValue(true);
-  }
+  } else
    
+  if(col == COL_MS || col == COL_WS){
+    var suspected_emplacements = get_suspected(e.value,e.oldValue);
+    suspected_emplacements.forEach(
+      function(emp) {
+        sequencer.clear(sequencer.get_job_index_for(emp.congelateur,emp.etagere))
+      })
+  }
+  
 }
 
 
@@ -129,7 +149,7 @@ function writeUserStamp(e) {
 
 
 /**
- * will set free the emplacement, write date and user account, and log comment in emplacement comment column
+ * will set free the emplacement, write date and user account,
  */
 function deleteEmplacement(e) {
   var ligne = e.range.getRow();
@@ -154,16 +174,28 @@ function deleteEmplacement(e) {
 
   if (response == ui.Button.YES) {
       // erase emplacement columns
-      sh.getRange(ligne, COL_MS).setValue("");
-      sh.getRange(ligne, COL_WS).setValue("");
-      // write log
-      logMsg(msg, sh, ligne);
-      return true;
+    sh.getRange(ligne, COL_MS).setValue("");
+    sh.getRange(ligne, COL_WS).setValue("");
+    // clear the sequencer for each etagere impacted by this deletion
+    //alert(len(decodeListe(deleted)));
+    decodeListe(deleted).forEach(function(emp){
+      sequencer.clear(sequencer.get_job_index_for(emp.congelateur,emp.etagere));}
+    );      
+    // write log
+    //logMsg(msg, sh, ligne);
+    return true;
   } else { // user said NO
     //e.value = false;
     e.range.setValue(false); // we abort 
   } // end if(response==
   return false;
+}
+
+
+function get_suspected(list1, list2) {
+  var lst_code1 = list1 && list1.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+  var lst_code2 = list2 && list2.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+  return decodeListe(lst_code1.concat(lst_code2));
 }
 
 
@@ -197,9 +229,13 @@ function initEmplacements() {
 function initEmplacementsv7() {
   SpreadsheetApp.getActiveSpreadsheet().toast("Chargement des données...", "Souchier", 100)
   // Get data from souchier
-  var data = SpreadsheetApp.getActiveSpreadsheet()
+/*  var data = SpreadsheetApp.getActiveSpreadsheet()
   .getSheetByName('Souchier Ceva Biovac')
   .getDataRange()
+  .getValues(); */
+    var data = SpreadsheetApp.getActiveSpreadsheet()
+  .getSheetByName('Souchier Ceva Biovac')
+    .getRange("A1:Y10")
   .getValues(); 
   // get freezer data
   conf.update();  
@@ -211,22 +247,19 @@ function initEmplacementsv7() {
   SpreadsheetApp.getActiveSpreadsheet().toast("Démarrage de la mise à jour...", "Souchier",100);
   var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status, nbUpd = 0;
   
-  for(var l = 2; l < data.length; l++) {
+  for(var l = 1; l < data.length; l++) {
     row = data[l];
     ms = row[COL_MS - 1];
     ws = row[COL_WS - 1];
-    emplacements_ms = ms && /(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/.exec(ms);
-    emplacements_ms = emplacements_ms && emplacements_ms.slice(1) || [];
-    emplacements_ws = ws && /(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/.exec(ws);
-    emplacements_ws = emplacements_ws && emplacements_ws.slice(1) || [];
+    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
     emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
+    
     for (var e=0; e < emplacements.length; e++) {
       var ligne = conf.getLineForFreezer(emplacements[e]) - 2;  //because first line is row 2, index 0 in array
       if(target[ligne][COL_OCCUPATION-7] == OCCUPE ) { // conflict detected
         if(target[ligne][COL_FM-7] != row[1]){
           target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
-          var col = decodeListe(emplacements_ms).indexOf(emplacements[e]) > 0 ? COL_MS - 1 : COL_WS - 1;
-          SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Souchier Ceva Biovac').getRange(l+1, col).setBackground("red");
         }        
       }else{ // no conflict, write souche data
         target[ligne][COL_OCCUPATION - 7] = OCCUPE;
@@ -235,7 +268,7 @@ function initEmplacementsv7() {
         target[ligne][COL_CLIENT - 7] = row[4];
         nbUpd++;
       }
-    }
+    } 
     if( l % 1000 === 0 ) {
       SpreadsheetApp.getActiveSpreadsheet().toast(l.toString() + "/" + conf.getNbTotalEmplacements());
       nbUpd = 0
@@ -303,3 +336,115 @@ function codeListe(listObjEmpl) {
 
 
 // ==================================== end of production code ===========
+
+/**
+ * Launch a full update by reinitialising the sequencer
+ * update is done etagere by etagere, scripts are running on time based trigger one after the another
+ * the sheet <SEQUENCER> show the status
+*/
+function fullUpdate() {
+  sequencer.init();
+}
+ 
+/*
+ * Any line of the sequencer in RUNNING wich job is expired is reinitialised, 
+ * then all not FINISHED étagères  are updated
+*/
+function continuousUpdate() {
+  sequencer.removeRunning();
+  sequencer.launch_next();  
+}
+
+
+function init_etag(cong, etag) {
+  // Get data from souchier
+  var data = SpreadsheetApp.getActiveSpreadsheet()
+  .getSheetByName('Souchier Ceva Biovac')
+  .getDataRange()
+  .getValues(); 
+
+  // get freezer data
+  conf.update();  
+  var targetRange = conf.getRangeForEtagere(cong, etag);
+  var etagFirstLine = conf.getLineForEtagere(cong, etag);
+  targetRange.activate();
+  conf.sheetEmplCong.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
+  var target = targetRange.getValues();
+  var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status = 0;
+  
+  for(var l = 1; l < data.length; l++) {
+    row = data[l];
+    ms = row[COL_MS - 1];
+    ws = row[COL_WS - 1];
+    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
+    
+    for (var e=0; e < emplacements.length; e++) {
+      if(emplacements[e].congelateur != cong || emplacements[e].etagere != etag) { continue }
+      var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
+      if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
+        if(target[ligne][COL_FM - 7] != row[1]){
+          target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
+        }        
+      }else{ // no conflict, write souche data
+        target[ligne][COL_OCCUPATION - 7] = OCCUPE;
+        target[ligne][COL_SIAM - 7] = row[3];
+        target[ligne][COL_FM - 7] = row[2];
+        target[ligne][COL_CLIENT - 7] = row[4];
+      } //end if
+    } //end for emplacements
+  } // enfor for data.length
+  targetRange.setValues(target);
+}
+
+
+/**
+ * Update the emplacements of two etageres from one freezer
+ * the two etageres are cleraed before updating
+ * @param {int} cong 
+ * @param {int} etag 
+ */
+function init_two_etag(cong, etag) {
+  // Get data from souchier
+  var data = SpreadsheetApp.getActiveSpreadsheet()
+  .getSheetByName('Souchier Ceva Biovac')
+  .getDataRange()
+  .getValues(); 
+
+  // get freezer data
+  conf.update();  
+  var targetRange = conf.getRangeForEtagere(cong, etag, etag + 1);
+  var etagFirstLine = conf.getLineForEtagere(cong, etag);
+  targetRange.activate();
+  conf.sheetEmplCong.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
+  var target = targetRange.getValues();
+  var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status = 0;
+  
+  for(var l = 1; l < data.length; l++) {
+    row = data[l];
+    ms = row[COL_MS - 1];
+    ws = row[COL_WS - 1];
+    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
+    
+    for (var e=0; e < emplacements.length; e++) {
+      if(emplacements[e].congelateur != cong ||
+         (emplacements[e].etagere != etag && emplacements[e].etagere != (etag + 1) )) 
+         { continue }
+      var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
+      if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
+        if(target[ligne][COL_FM - 7] != row[1]){
+          target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
+        }        
+      }else{ // no conflict, write souche data
+        target[ligne][COL_OCCUPATION - 7] = OCCUPE;
+        target[ligne][COL_SIAM - 7] = row[3];
+        target[ligne][COL_FM - 7] = row[2];
+        target[ligne][COL_CLIENT - 7] = row[4];
+      } //end if
+    } //end for emplacements
+  } // enfor for data.length
+  targetRange.setValues(target);
+}
