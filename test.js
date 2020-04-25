@@ -77,11 +77,13 @@ function test_etag() {
   //var l = sequencer.get_job_index_for(1, 4);
   //alert(l);
   //sequencer.clear(4);
-  //sequencer.removeRunning();
+  sequencer.removeRunning();
  // init_two_etag(1,1);
-  [1, 2].forEach(
-    function(t){
-    alert("toto");
-    });
+  //alert(sequencer.get_next_index(5));
   
+}
+
+function testTRig(){
+  var allTriggers = ScriptApp.getProjectTriggers();
+  alert(allTriggers.length);
 }

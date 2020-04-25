@@ -3,6 +3,29 @@
 *********************************************************/
 
 
+function convertToString(e) {
+  if(typeof(e) != 'string'){
+    return ""; 
+  }
+  return e;
+}
+
+/**
+ * Deletes a trigger.
+ * @param {string} triggerId The Trigger ID.
+ */
+function deleteTrigger(triggerId) {
+  // Loop over all triggers.
+  var allTriggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < allTriggers.length; i++) {
+    // If the current trigger is the correct one, delete it.
+    if (allTriggers[i].getUniqueId() === triggerId) {
+      ScriptApp.deleteTrigger(allTriggers[i]);
+      break;
+    }
+  }
+}
+
 // affiche une boite d'alerte avec le message
 function alert(prompt){
    SpreadsheetApp.getUi().alert(prompt);
@@ -91,12 +114,11 @@ function getSheet(name){
 */
 function getLastRowForColumn(col) {
   var values = col.getValues();
-  var lign = 0, lastNonEmpty = -1;
+  var lign = 0, lastNonEmpty = 0;
   while( lign < values.length ) { 
     if( values[lign] != "") {lastNonEmpty = lign}
     if(lign++ - lastNonEmpty > 50) {break}
   } // end while
-  if(lastNonEmpty < 0) { return false } // no empty position found 
   return lastNonEmpty + 1; //because value array start at 0, rows at 1
 }
 

@@ -8,7 +8,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
   .createAddonMenu() // Add a new option in the Google Docs Add-ons Menu
   .addItem("Import", "ImportToSouchier")
-  .addItem("Mise à jour emplacements", "initEmplacements")
+  .addItem("Mise à jour des emplacements", "continuousUpdate")
   .addToUi();  // Run the showSidebar function when someone clicks the menu
 }
 
