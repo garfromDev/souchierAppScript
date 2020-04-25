@@ -64,9 +64,10 @@ function test_seq(){
   //alert(sequencer.get_parameters().congelateur);
     //alert(sequencer.get_parameters().etagere);
   //alert(sequencer.get_parameters().index_script);
-  parameters = sequencer.get_parameters();
-  init_etag(parameters.congelateur, parameters.etagere); 
+  //parameters = sequencer.get_parameters();
+  //init_etag(parameters.congelateur, parameters.etagere); 
   //sequencer.launch_next();
+  sequencer.removeObsolete();
 }
 
 function test_etag() {
@@ -79,9 +80,11 @@ function test_etag() {
   //sequencer.clear(4);
   //sequencer.removeRunning();
  // init_two_etag(1,1);
-  [1, 2].forEach(
-    function(t){
-    alert("toto");
-    });
+  alert(sequencer.get_next_index(5));
   
+}
+
+function testTRig(){
+  var allTriggers = ScriptApp.getProjectTriggers();
+  alert(allTriggers.length);
 }

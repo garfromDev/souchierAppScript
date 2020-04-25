@@ -9,8 +9,7 @@ var COL_DESTR = 73; // column in 'Souchier Ceva Biovac' where destruction checkb
 var COL_MS = 22;    // column in 'Souchier Ceva Biovac' where MS emplacement is written
 var COL_WS = 24;    // column in 'Souchier Ceva Biovac' where WS emplacement is written
 var COL_LOG = 25;   // column in 'Souchier Ceva Biovac' where emplacement follow-up is written
-var COL_SOUCH = 6;  // column in 'Souchier Ceva Biovac' where the souche name is
-var FIRST_LINE = 2; // first line of data in 'Souchier Ceva Biovac'
+var COL_SOUCH = 6.  // column in 'Souchier Ceva Biovac' where the souche name is
 
 var conf = {
 /**
@@ -101,8 +100,9 @@ function onEdit(e) {
   var shObj = e.range.getSheet();
   var sh = shObj.getName();
 
-  if(sh != 'Souchier Ceva Biovac') { return; }
-  if( e.value === undefined) { return; } // multi-cell range
+  if(sh != 'Souchier Ceva Biovac') { return; }q
+  if(e.range.getNumColumns() > 1 || e.range.getNumRows() > 1) { return; }
+  //if( e.value === undefined) { return; } // multi-cell range
   const col = e.range.getColumn();
   
   // column validation checked
@@ -122,7 +122,7 @@ function onEdit(e) {
   } else
    
   if(col == COL_MS || col == COL_WS){
-    var suspected_emplacements = get_suspected(e.value,e.oldValue);
+    var suspected_emplacements = get_suspected(convertToString(e.range.getValue()), convertToString(e.oldValue));
     suspected_emplacements.forEach(
       function(emp) {
         sequencer.clear(sequencer.get_job_index_for(emp.congelateur,emp.etagere))
@@ -160,6 +160,12 @@ function deleteEmplacement(e) {
   var souche = sh.getRange(ligne, COL_SOUCH).getValue();
   var ui = SpreadsheetApp.getUi();
   var deleted = (ms + " " + ws).match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/gi) || [];
+  var msg;
+  if(deleted.length < 1){
+     msg = "destruction - pas d'emplacement à libérer";
+  } else {
+    msg = " destruction - liberation de MS " + ms + " et WS " + ws + "\n";
+  }
     
   conf.update();
   var message = "Etes-vous sur de vouloir détruire la souche <" + souche + ">?" + "\n";
@@ -195,7 +201,7 @@ function get_suspected(list1, list2) {
 
 
 /**
-* Initialise all congélateur occupation status from data
+* initialise all congélateur occupation status from data
 * in Souchier sheet.
 * data in congélateur sheet are erased
 * interference (2 different souche with same location) are highlighted in column 'conflit d'emplacement'
@@ -212,14 +218,14 @@ function initEmplacements() {
 
 
 /**
- * Clear sheet 'Emplacement congélateur' and rebuild the emplacement status based on information
+ * clear sheet 'Emplacement congélateur' and rebuild the emplacement status based on information
  * in 'souchier'. In case of conflict, the second souche with same emplacement will be marked red
  * in 'Souchier' and souche information are written in column 'conflit d'emplacement' of 'emplacement
  * congelateur'
  * NOTE : emplacement value setting is done in memory (working array), then final result is written to
  *       file with setValues()
  * CAUTION: exécution time is around 8 mn because of reading values into array and writing array into sheet
- * !!! Therefore this script cannot be executed by not-enterprise user because of script limitation to 6 mn !!!
+ * !!! Therefore this script cannot be executed by not-enterprise user because of script limitation to 6mn !!!
  */ 
 function initEmplacementsv7() {
   SpreadsheetApp.getActiveSpreadsheet().toast("Chargement des données...", "Souchier", 100)
@@ -242,7 +248,7 @@ function initEmplacementsv7() {
   SpreadsheetApp.getActiveSpreadsheet().toast("Démarrage de la mise à jour...", "Souchier",100);
   var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status, nbUpd = 0;
   
-  for(var l = FIRST_LINE - 1; l < data.length; l++) {
+  for(var l = 1; l < data.length; l++) {
     row = data[l];
     ms = row[COL_MS - 1];
     ws = row[COL_WS - 1];
@@ -276,13 +282,6 @@ function initEmplacementsv7() {
 }
 
 
-/**
-* write the message to the line 'ligne' of sheet 'sh' in col 'COL_LOG'
-* add the date at the beginning of the message
-* @param {string} msg : the message to print
-* @param {Sheet} sh : the sheet where to write
-* @param {int} ligne : the line number 
-*/
 function logMsg(msg, sh, ligne) {
    var dateText = Utilities.formatDate(new Date(), "GMT", "dd-MM-yyyy");
    var log = sh.getRange(ligne, COL_LOG);
@@ -337,6 +336,8 @@ function codeListe(listObjEmpl) {
 }
 
 
+// ==================================== end of production code ===========
+
 /**
  * Launch a full update by reinitialising the sequencer
  * update is done etagere by etagere, scripts are running on time based trigger one after the another
@@ -346,14 +347,57 @@ function fullUpdate() {
   sequencer.init();
 }
  
-
 /*
  * Any line of the sequencer in RUNNING wich job is expired is reinitialised, 
  * then all not FINISHED étagères  are updated
 */
 function continuousUpdate() {
   sequencer.removeRunning();
+  sequencer.removeObsolete();
   sequencer.launch_next();  
+}
+
+
+function init_etag(cong, etag) {
+  // Get data from souchier
+  var data = SpreadsheetApp.getActiveSpreadsheet()
+  .getSheetByName('Souchier Ceva Biovac')
+  .getDataRange()
+  .getValues(); 
+
+  // get freezer data
+  conf.update();  
+  var targetRange = conf.getRangeForEtagere(cong, etag);
+  var etagFirstLine = conf.getLineForEtagere(cong, etag);
+  targetRange.activate();
+  conf.sheetEmplCong.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
+  var target = targetRange.getValues();
+  var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status = 0;
+  
+  for(var l = 1; l < data.length; l++) {
+    row = data[l];
+    ms = row[COL_MS - 1];
+    ws = row[COL_WS - 1];
+    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+    emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
+    
+    for (var e=0; e < emplacements.length; e++) {
+      if(emplacements[e].congelateur != cong || emplacements[e].etagere != etag) { continue }
+      var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
+      if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
+        if(target[ligne][COL_FM - 7] != row[1]){
+          target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
+        }        
+      }else{ // no conflict, write souche data
+        target[ligne][COL_OCCUPATION - 7] = OCCUPE;
+        target[ligne][COL_SIAM - 7] = row[3];
+        target[ligne][COL_FM - 7] = row[2];
+        target[ligne][COL_CLIENT - 7] = row[4];
+      } //end if
+    } //end for emplacements
+  } // enfor for data.length
+  targetRange.setValues(target);
 }
 
 
@@ -406,6 +450,3 @@ function init_two_etag(cong, etag) {
   } // enfor for data.length
   targetRange.setValues(target);
 }
-
-
-// ==================================== end of production code ===========
