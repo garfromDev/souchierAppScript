@@ -76,7 +76,7 @@ var conf = {
     var startCong = this.getLineForEtagere(congel, etag1);
     var cong = this.congs[congel - 1];
     var sizeEtag = cong.nbRacks * cong.nbPlateaux * cong.nbLettres * cong.nbLignes;
-    var nb = etag2 ? 2 : 1;
+    var nb = 1 + etag2 - etag1;
     return this.sheetEmplCong.getRange("H"+ (startCong).toString() + ":L" + (startCong + nb * sizeEtag - 1).toString()); 
   },
   
