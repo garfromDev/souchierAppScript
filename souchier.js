@@ -421,9 +421,10 @@ function init_etag(cong, etag) {
  * Update the emplacements of two etageres from one freezer
  * the two etageres are cleraed before updating
  * @param {int} cong 
- * @param {int} etag 
+ * @param {int} de_etag  starting from this etagere
+ * @param {int} a_etag to this etagere (if same as de_etag, only one etagere handled)
  */
-function init_two_etag(cong, etag) {
+function init_two_etag(cong, de_etag, a_etag) {
   // Get data from souchier
   var data = SpreadsheetApp.getActiveSpreadsheet()
   .getSheetByName('Souchier Ceva Biovac')
@@ -432,8 +433,8 @@ function init_two_etag(cong, etag) {
 
   // get freezer data
   conf.update();  
-  var targetRange = conf.getRangeForEtagere(cong, etag, etag + 1);
-  var etagFirstLine = conf.getLineForEtagere(cong, etag);
+  var targetRange = conf.getRangeForEtagere(cong, de_etag, a_etag);
+  var etagFirstLine = conf.getLineForEtagere(cong, de_etag);
   targetRange.activate();
   conf.sheetEmplCong.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
   var target = targetRange.getValues();
@@ -449,7 +450,7 @@ function init_two_etag(cong, etag) {
     
     for (var e=0; e < emplacements.length; e++) {
       if(emplacements[e].congelateur != cong ||
-         (emplacements[e].etagere != etag && emplacements[e].etagere != (etag + 1) )) 
+         emplacements[e].etagere < de_etag || emplacements[e].etagere > a_etag) 
          { continue }
       var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
       if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
