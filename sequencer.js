@@ -143,10 +143,10 @@ var sequencer = {
     this._seqSheet.getRange(index, this._COL_STATUS).setValue(status);
   },
 
-  _log_error: function(err){
-    const index = this.get_script_index();
+  _log_error: function(err, index){
+    if(index == undefined){ index = this.get_script_index();}
     this._seqSheet.getRange(index, this._COL_STATUS).setValue('ERROR');
-    this._seqSheet.getRange(index, this._COL_ID_TO_DEL).setValue(err);
+    this._seqSheet.getRange(index, this._COL_ID).setValue(err);
   } 
   
 } //end of sequencer object definition
@@ -158,10 +158,18 @@ function update_chunk() {
     var parameters = sequencer.get_parameters();
   }catch(error){
     sequencer._log_error(error);
+    sequencer.launch_next();
     return;
   }
   sequencer.signal_started(parameters.index_script);
-  init_two_etag(parameters.congelateur, parameters.de_etagere, parameters.a_etagere); 
+  try{
+    init_two_etag(parameters.congelateur, parameters.de_etagere, parameters.a_etagere); 
+  } 
+  catch(error){
+    sequencer._log_error(error, parameters.index_script); 
+    sequencer.launch_next();
+    return;
+  }
   sequencer.signal_ended(parameters.index_script);
   sequencer.launch_next();
 }

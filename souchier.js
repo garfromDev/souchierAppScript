@@ -441,29 +441,33 @@ function init_two_etag(cong, de_etag, a_etag) {
   var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status = 0;
   
   for(var l = 1; l < data.length; l++) {
-    row = data[l];
-    ms = row[COL_MS - 1];
-    ws = row[COL_WS - 1];
-    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
-    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
-    emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
-    
-    for (var e=0; e < emplacements.length; e++) {
-      if(emplacements[e].congelateur != cong ||
-         emplacements[e].etagere < de_etag || emplacements[e].etagere > a_etag) 
-         { continue }
-      var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
-      if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
-        if(target[ligne][COL_FM - 7] != row[1]){
-          target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
-        }        
-      }else{ // no conflict, write souche data
-        target[ligne][COL_OCCUPATION - 7] = OCCUPE;
-        target[ligne][COL_SIAM - 7] = row[3];
-        target[ligne][COL_FM - 7] = row[2];
-        target[ligne][COL_CLIENT - 7] = row[4];
-      } //end if
-    } //end for emplacements
+    try{
+      row = data[l];
+      ms = row[COL_MS - 1];
+      ws = row[COL_WS - 1];
+      emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+      emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
+      emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
+      
+      for (var e=0; e < emplacements.length; e++) {
+        if(emplacements[e].congelateur != cong ||
+          emplacements[e].etagere < de_etag || emplacements[e].etagere > a_etag) 
+          { continue }
+        var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
+        if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
+          if(target[ligne][COL_FM - 7] != row[1]){
+            target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
+          }        
+        }else{ // no conflict, write souche data
+          target[ligne][COL_OCCUPATION - 7] = OCCUPE;
+          target[ligne][COL_SIAM - 7] = row[3];
+          target[ligne][COL_FM - 7] = row[2];
+          target[ligne][COL_CLIENT - 7] = row[4];
+        } //end if
+      } //end for emplacements
+    }catch(error){ // we add line number to error message
+        throw "Ligne " + (l+1).toString() + " erreur : " + error;
+    } 
   } // enfor for data.length
   targetRange.setValues(target);
 }
