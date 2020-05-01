@@ -136,16 +136,7 @@ function onEdit(e) {
   // column destruction unchecked
     SpreadsheetApp.getUi().alert("La destruction est irréversible!");
     e.range.setValue(true);
-  } else
-   
-  if(col == COL_MS || col == COL_WS){
-    var suspected_emplacements = get_suspected(convertToString(e.value), convertToString(e.oldValue));
-    suspected_emplacements.forEach(
-      function(emp) {
-        sequencer.clear(sequencer.get_job_index_for(emp.congelateur,emp.etagere))
-      })
-  }
-  
+  } 
 }
 
 

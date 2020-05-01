@@ -25,10 +25,11 @@ var sequencer = {
   _COL_END: 6,
   _COL_ID: 7,
   _COL_ID_TO_DEL: 8,
+  _SEQ_MAX_LINE: 100,
  
   init : function(){
     var sh = this._seqSheet;
-    sh.getRange("D2:H100").activate();
+    sh.getRange("D2:H" + this._SEQ_MAX_LINE.toString()).activate();
     sh.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
     this.launch_next();
   },
@@ -103,15 +104,29 @@ var sequencer = {
       }
     }
   }, 
-    
+
+  /**
+   * @throws if no job found matching  etagere and cong
+   * @param {int} cong 
+   * @param {int} etag 
+   */  
   get_job_index_for: function(cong, etag){
     var sh = this._seqSheet;
     var l = 2;
-    etag = etag - 1 + etag % 2  // 1->1, 2->1, 3->3, 4->3  
+    var inRange = function (etag, range) {
+      const etags = range.split('-');
+      const min_e = parseInt(etags[0]);
+      const max_e = parseInt(etags.pop());
+      return etag >= min_e && etag <= max_e;
+    } 
     while( cong != sh.getRange(l, this._COL_CONG).getValue() ||
-          etag != sh.getRange(l, this._COL_ETAG).getValue()){
+          !inRange(etag, sh.getRange(l, this._COL_ETAG).getValue().toString())
+          && l <= this._SEQ_MAX_LINE ){
         l++;
       }
+    if(l > this._SEQ_MAX_LINE){
+      throw "Couple congelateur / etagere invalide - cong : " + cong + "  etag : " + etag;
+    }  
     return l;
   },  
     
