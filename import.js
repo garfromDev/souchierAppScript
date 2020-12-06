@@ -27,6 +27,30 @@ function ImportToSouchier() {
 }
 
 /**
+* copy data from import sheet (value only mode) and erase import after copy
+* alternate version, use getValue/setValues instead of copyTo for improved performance 
+*/
+function ImportToSouchierOptimized() {
+
+  // 1 - get import data
+  toast("Import en cours...", 300);
+  var lign = getLastRowForColumn(importSheetf.getRange("B:B"));
+  var impf1 = importSheetf.getRange(1, 1, lign, 4).getValues();
+  var impf2 = importSheetf.getRange(1, 7, lign, 17).getValues();
+  // 2 - find target location = first empty line of target sheet
+  var souchLign = getLastRowForColumn(targetSheet.getRange("C:C")) + 1;
+  var targetCell1 = targetSheet.getRange(souchLign, 2, lign, 2);
+  var targetCell2 = targetSheet.getRange(souchLign, 8, lign, 17); 
+  // 3 copy data
+  targetCell1.setValues(impf1);
+  targetCell2.setValues(impf2);
+  // 4 clear import in initial sheet
+  var imp = importSheet.getDataRange();
+  imp.clearContent();  
+  toast("Import terminé");
+}
+
+/**
 * copy data from import sheet (value only mode) and erase import after copy 
 * INITIAL IMPORT, COPY ALL COLUMNS FROM 1 TO 17
 * Pour executer ce script, sélectionner 'ImportInitialToSouchier' dans le menu en haut

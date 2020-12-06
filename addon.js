@@ -7,7 +7,7 @@ function onInstall() {
 function onOpen() {
   SpreadsheetApp.getUi()
   .createAddonMenu() // Add a new option in the Google Docs Add-ons Menu
-  .addItem("Import", "ImportToSouchier")
+  .addItem("Import", "ImportToSouchierOptimized")
   .addItem("Mise à jour des emplacements", "continuousUpdate")
   .addToUi();  // Run the showSidebar function when someone clicks the menu
 }
