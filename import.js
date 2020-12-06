@@ -34,11 +34,11 @@ function ImportToSouchierOptimized() {
 
   // 1 - get import data
   toast("Import en cours...", 300);
-  var lign = getLastRowForColumn(importSheetf.getRange("B:B"));
+  var lign = importSheetf.getRange("O1").getNextDataCell(SpreadsheetApp.Direction.DOWN).getRow()
   var impf1 = importSheetf.getRange(1, 1, lign, 4).getValues();
   var impf2 = importSheetf.getRange(1, 7, lign, 17).getValues();
   // 2 - find target location = first empty line of target sheet
-  var souchLign = getLastRowForColumn(targetSheet.getRange("C:C")) + 1;
+  var souchLign = targetSheet.getRange("C2").getNextDataCell(SpreadsheetApp.Direction.DOWN).getRow() + 1
   var targetCell1 = targetSheet.getRange(souchLign, 2, lign, 2);
   var targetCell2 = targetSheet.getRange(souchLign, 8, lign, 17); 
   // 3 copy data
