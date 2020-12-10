@@ -4,29 +4,6 @@ var targetSheet = getSheet('Souchier Ceva Biovac');
 
 
 /**
-* copy data from import sheet (value only mode) and erase import after copy 
-*/
-function ImportToSouchier() {
-
-  // 1 - get import data
-  toast("Import en cours...", 300);
-  var lign = getLastRowForColumn(importSheetf.getRange("B:B"));
-  var impf1 = importSheetf.getRange(1, 1, lign, 4);
-  var impf2 = importSheetf.getRange(1, 7, lign, 17);
-  // 2 - find target location = first empty line of target sheet
-  var souchLign = getLastRowForColumn(targetSheet.getRange("C:C")) + 1;
-  var targetCell1 = targetSheet.getRange(souchLign, 2);
-  var targetCell2 = targetSheet.getRange(souchLign, 8); 
-  // 3 copy data
-  impf1.copyTo(targetCell1,{contentsOnly:true});
-  impf2.copyTo(targetCell2,{contentsOnly:true});
-  // 4 clear import in initial sheet
-  var imp = importSheet.getDataRange();
-  imp.clearContent();  
-  toast("Import terminé");
-}
-
-/**
 * copy data from import sheet (value only mode) and erase import after copy
 * alternate version, use getValue/setValues instead of copyTo for improved performance 
 */
@@ -38,14 +15,14 @@ function ImportToSouchierOptimized() {
   toast("ligne import identifiee");
   var impf1 = importSheetf.getRange(1, 1, lign, 4).getValues();
   toast("1er bloc donnes import charge");
-  var impf2 = importSheetf.getRange(1, 7, lign, 17).getValues();
+  var impf2 = importSheetf.getRange(1, 7, lign, 10).getValues();
   toast("2eme bloc donnes import charge");
   // 2 - find target location = first empty line of target sheet
   var souchLign = targetSheet.getRange("C2").getNextDataCell(SpreadsheetApp.Direction.DOWN).getRow() + 1
   toast("ligne de souchier identifiee");
   var targetCell1 = targetSheet.getRange(souchLign, 2, lign, 4);
   
-  var targetCell2 = targetSheet.getRange(souchLign, 8, lign, 17); 
+  var targetCell2 = targetSheet.getRange(souchLign, 8, lign, 10); 
 
   // 3 copy data
   targetCell1.setValues(impf1);
