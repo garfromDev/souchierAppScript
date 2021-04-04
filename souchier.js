@@ -208,87 +208,6 @@ function get_suspected(list1, list2) {
 }
 
 
-/**
-* initialise all congélateur occupation status from data
-* in Souchier sheet.
-* data in congélateur sheet are erased
-* interference (2 different souche with same location) are highlighted in column 'conflit d'emplacement'
-* and source of interference is highlighted by red background
-* for performance reason, both source and target are read in memory and written to disk only at the end of treatment
-* except background color change
-*/
-function initEmplacements() {
-  // The congelateur sheet is protected, but the range where the information are written is only warning protected   
-  initEmplacementsv7();
-  getSheet('Emplacements congélateurs').getRange('M1').setValue("Maj le " + Utilities.formatDate(new Date(), "CET", "dd-MM-yyyy HH:mm"));
-
-}
-
-
-/**
- * clear sheet 'Emplacement congélateur' and rebuild the emplacement status based on information
- * in 'souchier'. In case of conflict, the second souche with same emplacement will be marked red
- * in 'Souchier' and souche information are written in column 'conflit d'emplacement' of 'emplacement
- * congelateur'
- * NOTE : emplacement value setting is done in memory (working array), then final result is written to
- *       file with setValues()
- * CAUTION: exécution time is around 8 mn because of reading values into array and writing array into sheet
- * !!! Therefore this script cannot be executed by not-enterprise user because of script limitation to 6mn !!!
- */ 
-function initEmplacementsv7() {
-  SpreadsheetApp.getActiveSpreadsheet().toast("Chargement des données...", "Souchier", 100)
-  // Get data from souchier
-/*  var data = SpreadsheetApp.getActiveSpreadsheet()
-  .getSheetByName('Souchier Ceva Biovac')
-  .getDataRange()
-  .getValues(); */
-    var data = SpreadsheetApp.getActiveSpreadsheet()
-  .getSheetByName('Souchier Ceva Biovac')
-    .getRange("A1:Y10")
-  .getValues(); 
-  // get freezer data
-  conf.update();  
-  var zone = "H2:L" + (conf.getNbTotalEmplacements() + 1).toString();
-  var targetRange = conf.sheetEmplCong.getRange(zone);
-  targetRange.activate();
-  conf.sheetEmplCong.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
-  var target = targetRange.getValues();
-  SpreadsheetApp.getActiveSpreadsheet().toast("Démarrage de la mise à jour...", "Souchier",100);
-  var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status, nbUpd = 0;
-  
-  for(var l = 1; l < data.length; l++) {
-    row = data[l];
-    ms = row[COL_MS - 1];
-    ws = row[COL_WS - 1];
-    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
-    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
-    emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
-    
-    for (var e=0; e < emplacements.length; e++) {
-      var ligne = conf.getLineForFreezer(emplacements[e]) - 2;  //because first line is row 2, index 0 in array
-      if(target[ligne][COL_OCCUPATION-7] == OCCUPE ) { // conflict detected
-        if(target[ligne][COL_FM-7] != row[1]){
-          target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
-        }        
-      }else{ // no conflict, write souche data
-        target[ligne][COL_OCCUPATION - 7] = OCCUPE;
-        target[ligne][COL_SIAM - 7] = row[3];
-        target[ligne][COL_FM - 7] = row[2];
-        target[ligne][COL_CLIENT - 7] = row[4];
-        nbUpd++;
-      }
-    } 
-    if( l % 1000 === 0 ) {
-      SpreadsheetApp.getActiveSpreadsheet().toast(l.toString() + "/" + conf.getNbTotalEmplacements());
-      nbUpd = 0
-    }
-  }
-  SpreadsheetApp.getActiveSpreadsheet().toast("Calculs terminés, écriture en cours..."+target.length+" x "+target[0].length, "Souchier", 200);
-  conf.sheetEmplCong.getRange(zone).setValues(target);
-  SpreadsheetApp.flush();
-  SpreadsheetApp.getActiveSpreadsheet().toast("Terminé avec succès");
-}
-
 
 function logMsg(msg, sh, ligne) {
    var dateText = Utilities.formatDate(new Date(), "GMT", "dd-MM-yyyy");
@@ -344,8 +263,6 @@ function codeListe(listObjEmpl) {
 }
 
 
-// ==================================== end of production code ===========
-
 /**
  * Launch a full update by reinitialising the sequencer
  * update is done etagere by etagere, scripts are running on time based trigger one after the another
@@ -362,49 +279,6 @@ function fullUpdate() {
 function continuousUpdate() {
   sequencer.removeRunning();
   sequencer.launch_next();  
-}
-
-
-function init_etag(cong, etag) {
-  // Get data from souchier
-  var data = SpreadsheetApp.getActiveSpreadsheet()
-  .getSheetByName('Souchier Ceva Biovac')
-  .getDataRange()
-  .getValues(); 
-
-  // get freezer data
-  conf.update();  
-  var targetRange = conf.getRangeForEtagere(cong, etag);
-  var etagFirstLine = conf.getLineForEtagere(cong, etag);
-  targetRange.activate();
-  conf.sheetEmplCong.getActiveRangeList().clear({contentsOnly: true, skipFilteredRows: false});
-  var target = targetRange.getValues();
-  var row, ms, ws, emplacements, emplacements_ms, emplacements_ws, status = 0;
-  
-  for(var l = 1; l < data.length; l++) {
-    row = data[l];
-    ms = row[COL_MS - 1];
-    ws = row[COL_WS - 1];
-    emplacements_ms = ms && ms.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
-    emplacements_ws = ws && ws.match(/(C\d+ E\d+ R\d+ P\d+ [A-Z]\d+)/g) || [];
-    emplacements = decodeListe(emplacements_ms.concat(emplacements_ws));
-    
-    for (var e=0; e < emplacements.length; e++) {
-      if(emplacements[e].congelateur != cong || emplacements[e].etagere != etag) { continue }
-      var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
-      if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
-        if(target[ligne][COL_FM - 7] != row[1]){
-          target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
-        }        
-      }else{ // no conflict, write souche data
-        target[ligne][COL_OCCUPATION - 7] = OCCUPE;
-        target[ligne][COL_SIAM - 7] = row[3];
-        target[ligne][COL_FM - 7] = row[2];
-        target[ligne][COL_CLIENT - 7] = row[4];
-      } //end if
-    } //end for emplacements
-  } // enfor for data.length
-  targetRange.setValues(target);
 }
 
 
@@ -446,9 +320,7 @@ function init_two_etag(cong, de_etag, a_etag) {
           { continue }
         var ligne = conf.getLineForFreezer(emplacements[e]) - etagFirstLine;  //because first line is row 2, index 0 in array
         if(target[ligne][COL_OCCUPATION - 7] == OCCUPE ) { // conflict detected
-          if(target[ligne][COL_FM - 7] != row[1]){
-            target[ligne][COL_SIAM -7 + 2] = "Interference avec CL n°" + row[2];
-          }        
+            target[ligne][COL_SIAM -7 + 2] += " Interference avec CL n°" + row[2];        
         }else{ // no conflict, write souche data
           target[ligne][COL_OCCUPATION - 7] = OCCUPE;
           target[ligne][COL_SIAM - 7] = row[3];

@@ -1,5 +1,3 @@
-
-
 function check(){
   Logger.log("test getLineForFreezer");  
   conf.update();
