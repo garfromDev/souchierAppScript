@@ -184,7 +184,7 @@ function export_souchier_vers_planning_malditof(){
         {
             "Origine demande": "Souchier Ceva Biovac"
         },
-        []                                                                  //source field(s) that must all be true
+        [],                                                                  //source field(s) that must all be true
         ['Souches détruites\n\n\n\nStrain destroyed'],                      //source field(s) that must all be false   
         'export_souchier_vers_planning_malditof',                           //ID unique du script pour stocker les lignes atteintes
         19583,                                               // no de la ligne a laquelle commencer, est ignoré si zéro ou si cette ligne est dépassée
