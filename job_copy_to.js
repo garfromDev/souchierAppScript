@@ -50,7 +50,7 @@ var ExportManager = {
     find_columns_for : function(fields_to_find, sheet){
         sheet = sheet || this.source_sheet;
         var col_list = [];
-        for( var f = 0; f < this.fields_to_find.length; f++){
+        for( var f = 0; f < fields_to_find.length; f++){
             var col = this.find_header(fields_to_find[f], sheet);
             if(col){
                 col_list.push(col);
@@ -68,21 +68,38 @@ var ExportManager = {
         var not_undefined = function(x){return x !== undefined};
         //var col_for_field_with_text = this.find_columns_for(this.fields_with_text, this.target_sheet);
         this.col_for_field_with_text = {};
-        for(var f=0; f < this.fields_with_text.length; f++){
-            var field = fields_with_text[f];
-            this.col_for_field_with_text[field] = {'col': this.find_columns_for([field], this.target_sheet)
-                                                              .find(not_undefined),
-                                                   'value': this.fields_with_text[field]
-                                                  }
+        console.log("this.fields_with_text ", this.fields_with_text);
+        var fields = Object.keys(this.fields_with_text);
+        console.log("fields ", fields, "", typeof(fields));
+        if(fields){
+          for(var f=0; f < fields.length; f++){
+              var field = fields[f];
+              console.log("field ", field);
+              console.log("col ", this.find_columns_for([field], this.target_sheet));
+              this.col_for_field_with_text[field] = {'col': this.find_columns_for([field], this.target_sheet),
+                                                                //.find(not_undefined),
+                                                    'value': this.fields_with_text[field]
+                                                    }
+          }
         }
+        console.log("this.col_for_field_with_text ", this.col_for_field_with_text);
         this.col_mapping = {}
-        for(var f=0; f < this.fields_to_map.length; f++){
-            var field = this.fields_to_map[f];
-            this.col_mapping[field] = {
-                'source_col' : this.find_columns_for([field]).find(not_undefined),
-                'target_col' : this.find_columns_for([this.fields_to_map[field]], this.target_sheet).find(not_undefined)
-            }
+        console.log("this.fields_to_map. ", this.fields_to_map);
+        fields = Object.keys(this.fields_to_map);
+        console.log("fields ", fields);
+        if(fields){
+          for(var f=0; f < fields.length; f++){
+              var field = fields[f];
+              console.log("field ", field);
+              this.col_mapping[field] = {
+                  'source_col' : this.find_columns_for([field], this.source_sheet), //.find(not_undefined),
+                  'target_col' : this.find_columns_for([this.fields_to_map[field]], this.target_sheet) //.find(not_undefined)
+              }
+              console.log("source col ", this.find_columns_for([field], this.target_sheet),
+              "  target col", this.find_columns_for([this.fields_to_map[field]], this.target_sheet));
+          }
         }
+        console.log("this.col_mapping ", this.col_mapping);
     },
 
 
@@ -107,24 +124,46 @@ var ExportManager = {
          * Copy mapped filed from source line to traget line of target sheet and set date field and fixed text field
          * @param source_line {int} the line in source sheet to copy to target line in target sheet 
          */
-        for(var f = 0; f < this.fields_to_map.length; f++){
-            var maping = this.col_mapping[field];
-            this.target_sheet.getRange(target_line, maping.target_col)
-            .setValue(this.source_sheet.getRange(source_line, maping.source_col).getValue());
+        var fields = Object.keys(this.fields_to_map);
+        if(fields){
+          for(var f = 0; f < fields.length; f++){
+              var field = fields[f];
+              console.log("field ", field);
+              var maping = this.col_mapping[field];
+              console.log("mapping. ", maping);
+              console.log("copy mapped field line ", source_line, " col ",maping.source_col, " to ", target_line, " , ", maping.target_col, "value ", this.source_sheet.getRange(source_line, maping.source_col).getValue() );
+              this.target_sheet.getRange(target_line, maping.target_col)
+              .setValue(this.source_sheet.getRange(source_line, maping.source_col).getValue());
+
+          }
         }
-        for(var f = 0; f < this.fields_with_text.lehgth; f++){
-            var field = this.fields_with_text[f];
-            var maping = this.col_for_field_with_text[field];
-            this.target_sheet.getRange(target_line, maping.col).setValue(maping.value);
+        fields = Object.keys(this.fields_with_text);
+        if(fields){
+          for(var f = 0; f < fields.length; f++){
+              field = fields[f];
+              console.log("field ", field);
+              var maping = this.col_for_field_with_text[field];
+              console.log("mapping. ", maping);
+                          console.log("put field line ", target_line, " col ",maping.col, " to ", maping.value);
+              this.target_sheet.getRange(target_line, maping.col).setValue(maping.value);
+          }
         }
-        for(var f = 0; f < this.col_with_date.length; f++){
-            var col = this.col_with_date[f];
-            this.target_sheet.getRange(target_line, col).setValue(new Date);
+        fields = Object.keys(this.fields_with_date);
+        if(fields){
+          for(var f = 0; f < fields.length; f++){
+              field = fields[f];
+              console.log("field ", field);
+              var col = this.col_with_date[field];
+              console.log("set ", target_line, " , ", col, " with date");
+              this.target_sheet.getRange(target_line, col).setValue(new Date);
+          }
         }
     },
 
 
     end_of_data_reached : function(line){
+        console.log("end_of_data_reached of line ", line, " : ",
+         this.source_sheet.getRange(line, this.source_not_empty_col).getValue() == "");
         return this.source_sheet.getRange(line, this.source_not_empty_col).getValue() == "";
     },
 
@@ -139,6 +178,7 @@ var ExportManager = {
             var col = this.col_must_be_false[c];
             result = result && !this.source_sheet.getRange(line, col).getValue();
         }
+        console.log(line, "  must be exported : ", result);
         return result;
     },
 
@@ -147,9 +187,11 @@ var ExportManager = {
         var last_line_key = 'ExportManager.' + this.unique_id;
         var last_line_exported = parseInt(PropertiesService.getScriptProperties().getProperty(last_line_key)) || 1;
         last_line_exported++;
+        console.log("starting at line ", last_line_exported);
         var target_line = this.get_first_free_line_of_target();
         while(!this.end_of_data_reached(last_line_exported)){
             if(this.must_be_exported(last_line_exported)){
+                console.log("copying line ", last_line_exported);
                 this.copy_line_to_target(last_line_exported, target_line++);
             }
             last_line_exported++;
@@ -195,7 +237,7 @@ function export_souchier_vers_planning_malditof(){
 
 //=========================================== UTILITY FOR EXPERT ====================================
 function reset_last_line(){
-    PropertiesService.getScriptProperties().setProperty("ExportManager.export_vers_planning_malditof", 30);
+    PropertiesService.getScriptProperties().setProperty("ExportManager.export_vers_planning_malditof", 19583);
   }
   
   function check_last_line(){
@@ -207,7 +249,7 @@ function reset_last_line(){
 // ================================================ TESTS ============================================
 // those test are not unit test, they are intended to interactively test the setup by adjusting values
 function reset_last_line(){
-  PropertiesService.getScriptProperties().setProperty("ExportManager.export_vers_planning_malditof", 30);
+  PropertiesService.getScriptProperties().setProperty("ExportManager.export_souchier_vers_planning_malditof", 30);
 }
 
 function check_last_line(){
