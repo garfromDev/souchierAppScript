@@ -36,7 +36,7 @@ var ExportManager = {
         console.log("find header <",field,"> in ",sheet.getName());
         if(!(field && sheet)){return null;}
         for(var line=1;line <= this.max_header_line; line++){
-            for(var col=1; col <= sheet.getLastColumn(); col++){
+            for(var col=1; col <= 89; col++){ // !!! a maj si on ajoute des colonnes !!!!
                 if(sheet.getRange(line,col).getValue() == field){
                     console.log("find-header found  ",field," at line ",line," col ", col, " of ",sheet.getName());
                     return col;
